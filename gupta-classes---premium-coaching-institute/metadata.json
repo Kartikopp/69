@@ -1,0 +1,7 @@
+{
+  "name": "Gupta Classes - Premium Coaching Institute",
+  "description": "A premium educational coaching website for Gupta Classes, Meerut, specializing in Banking, SSC, CAT, and competitive exams with a modern, animated UI.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

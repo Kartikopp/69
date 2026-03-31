@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: courses
+    // Fields:
+    //   - title: string (required)
+    //   - description: string (required)
+    //   - category: string (required, ['Banking', 'SSC', 'CAT', 'Foundation'])
+    //   - price: number (required)
+    //   - duration: string (optional)
+    //   - imageUrl: string (optional, URL)
+    //
+    // Collection: users
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - role: string (required, ['student', 'admin'])
+    //   - enrolledCourses: list (optional, strings)
+    //
+    // Collection: results
+    // Fields:
+    //   - studentName: string (required)
+    //   - exam: string (required)
+    //   - rank: string (optional)
+    //   - year: number (required)
+    //   - imageUrl: string (optional, URL)
+    //
+    // Collection: notifications
+    // Fields:
+    //   - title: string (required)
+    //   - message: string (required)
+    //   - createdAt: timestamp (required)
+    //   - type: string (required, ['exam', 'general', 'result'])
+    //
+    // Collection: contactMessages
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - subject: string (optional)
+    //   - message: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "glitchxkartik@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidCourse(data) {
+      return hasRequiredFields(['title', 'category', 'price']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.category in ['Banking', 'SSC', 'CAT', 'Foundation'] &&
+             data.price is number && data.price >= 0;
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'name', 'email', 'role']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['student', 'admin'];
+    }
+
+    function isValidResult(data) {
+      return hasRequiredFields(['studentName', 'exam', 'year']) &&
+             data.studentName is string && data.studentName.size() > 0 &&
+             data.exam is string && data.exam.size() > 0 &&
+             data.year is number && data.year > 2000;
+    }
+
+    function isValidNotification(data) {
+      return hasRequiredFields(['title', 'message', 'createdAt', 'type']) &&
+             data.title is string && data.title.size() > 0 &&
+             data.message is string && data.message.size() > 0 &&
+             data.createdAt is timestamp &&
+             data.type in ['exam', 'general', 'result'];
+    }
+
+    function isValidContactMessage(data) {
+      return hasRequiredFields(['name', 'email', 'message', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 &&
+             isValidEmail(data.email) &&
+             data.message is string && data.message.size() > 0 &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /courses/{courseId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin() && isValidCourse(request.resource.data);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (request.resource.data.role == 'student' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /results/{resultId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin() && isValidResult(request.resource.data);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin() && isValidNotification(request.resource.data);
+    }
+
+    match /contactMessages/{messageId} {
+      allow read: if isAdmin();
+      allow create: if isValidContactMessage(request.resource.data);
+    }
+  }
+}

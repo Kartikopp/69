@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "Course": {
+      "title": "Course",
+      "description": "A competitive exam preparation course offered by Gupta Classes.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The name of the course (e.g., IBPS PO, SSC CGL)." },
+        "description": { "type": "string", "description": "A detailed description of the course content." },
+        "category": { "type": "string", "enum": ["Banking", "SSC", "CAT", "Foundation"], "description": "The exam category." },
+        "price": { "type": "number", "description": "The enrollment fee for the course." },
+        "duration": { "type": "string", "description": "The length of the course (e.g., 6 months)." },
+        "imageUrl": { "type": "string", "format": "url", "description": "A URL to a representative image for the course." }
+      },
+      "required": ["title", "category", "price"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "A registered student at Gupta Classes.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The Firebase Auth UID of the student." },
+        "name": { "type": "string", "description": "The full name of the student." },
+        "email": { "type": "string", "format": "email", "description": "The email address of the student." },
+        "role": { "type": "string", "enum": ["student", "admin"], "description": "The user's role in the system." },
+        "enrolledCourses": { "type": "array", "items": { "type": "string" }, "description": "A list of course IDs the student is enrolled in." }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "A success story or rank holder from Gupta Classes.",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string", "description": "The name of the successful student." },
+        "exam": { "type": "string", "description": "The exam they cleared (e.g., IBPS PO 2024)." },
+        "rank": { "type": "string", "description": "The rank achieved (if applicable)." },
+        "year": { "type": "number", "description": "The year of selection." },
+        "imageUrl": { "type": "string", "format": "url", "description": "A photo of the student." }
+      },
+      "required": ["studentName", "exam", "year"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "An announcement or update for students.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the notification." },
+        "message": { "type": "string", "description": "The detailed announcement message." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the notification was created." },
+        "type": { "type": "string", "enum": ["exam", "general", "result"], "description": "The category of the notification." }
+      },
+      "required": ["title", "message", "createdAt"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "A message sent via the contact form.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The sender's name." },
+        "email": { "type": "string", "format": "email", "description": "The sender's email." },
+        "subject": { "type": "string", "description": "The subject of the message." },
+        "message": { "type": "string", "description": "The message content." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the message was sent." }
+      },
+      "required": ["name", "email", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/courses/{courseId}": { "schema": "Course", "description": "Collection of available courses." },
+    "/users/{userId}": { "schema": "Student", "description": "Collection of registered users (students and admins)." },
+    "/results/{resultId}": { "schema": "Result", "description": "Collection of student selection results." },
+    "/notifications/{notificationId}": { "schema": "Notification", "description": "Collection of site-wide announcements." },
+    "/contactMessages/{messageId}": { "schema": "ContactMessage", "description": "Collection of inquiries from the contact form." }
+  }
+}
